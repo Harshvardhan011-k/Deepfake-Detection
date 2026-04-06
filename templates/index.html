@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deepfake Detector AI</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Outfit:wght@500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0b101e;
+            --glass-bg: rgba(17, 24, 39, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --primary: #4f46e5;
+            --primary-hover: #6366f1;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --real-color: #10b981;
+            --fake-color: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Background Gradients Setup */
+        .bg-shapes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .shape {
+            position: absolute;
+            filter: blur(100px);
+            opacity: 0.5;
+            animation: float 20s infinite alternate cubic-bezier(0.5, 0, 0.5, 1);
+        }
+
+        .shape-1 {
+            background: linear-gradient(to right, #4f46e5, #ec4899);
+            width: 45vw;
+            height: 45vw;
+            max-width: 600px;
+            max-height: 600px;
+            border-radius: 50%;
+            top: -10%;
+            left: -10%;
+        }
+
+        .shape-2 {
+            background: linear-gradient(to right, #06b6d4, #3b82f6);
+            width: 50vw;
+            height: 50vw;
+            max-width: 700px;
+            max-height: 700px;
+            border-radius: 50%;
+            bottom: -20%;
+            right: -10%;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(100px, 50px) scale(1.1);
+            }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 2rem;
+            margin: 2rem;
+            z-index: 10;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3rem 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            text-align: center;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2.5rem;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed #334155;
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            background: rgba(30, 41, 59, 0.4);
+            margin-bottom: 2rem;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--primary);
+            background: rgba(79, 70, 229, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #64748b;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover .upload-icon {
+            color: var(--primary);
+            transform: translateY(-5px);
+        }
+
+        .upload-text {
+            font-weight: 500;
+            color: #e2e8f0;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-area input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .file-name {
+            font-size: 0.95rem;
+            color: #818cf8;
+            margin-top: 15px;
+            display: none;
+            word-break: break-all;
+            background: rgba(79, 70, 229, 0.15);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(79, 70, 229, 0.3);
+        }
+
+        /* Button */
+        .submit-btn {
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 1rem 2rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.6);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: none;
+            width: 22px;
+            height: 22px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Result Section */
+        .result-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--glass-border);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        .image-preview {
+            width: 100%;
+            height: auto;
+            max-height: 250px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+        }
+
+        .result-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1.5rem;
+        }
+
+        .result-badge.real {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--real-color);
+            border: 1px solid var(--real-color);
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
+        }
+
+        .result-badge.fake {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--fake-color);
+            border: 1px solid var(--fake-color);
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.25);
+        }
+
+        .confidence-container {
+            text-align: left;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .confidence-bar {
+            background: rgba(255, 255, 255, 0.05);
+            height: 10px;
+            border-radius: 10px;
+            margin: 0.5rem 0 1rem;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .confidence-level {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 1.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            width: 0%;
+            /* animates via JS */
+        }
+
+        .real .confidence-level {
+            background: linear-gradient(90deg, #059669, #34d399);
+            box-shadow: 0 0 10px rgba(52, 211, 153, 0.5);
+        }
+
+        .fake .confidence-level {
+            background: linear-gradient(90deg, #dc2626, #f87171);
+            box-shadow: 0 0 10px rgba(248, 113, 113, 0.5);
+        }
+
+        .confidence-text {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .score-value {
+            color: var(--text-main);
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+    </div>
+
+    <div class="container">
+        <div class="glass-card">
+            <h1>Deepfake Detector AI</h1>
+            <p class="subtitle">Upload an image to verify its authenticity using advanced deep learning neural networks.
+            </p>
+
+            <form id="uploadForm" method="POST" enctype="multipart/form-data">
+                <div class="upload-area" id="uploadArea">
+                    <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                    <div class="upload-text">Drag & Drop Image Here</div>
+                    <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem;">or click to browse from your
+                        device</div>
+                    <input type="file" name="file" id="fileInput" accept="image/*" required>
+                    <div class="file-name" id="fileName"></div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span id="btnText">Analyze Image</span>
+                    <i class="fa-solid fa-wand-magic-sparkles" id="btnIcon"></i>
+                    <div class="spinner" id="spinner"></div>
+                </button>
+            </form>
+
+            {% if prediction %}
+            <div class="result-section">
+                {% if image_path %}
+                <img src="{{ image_path }}" alt="Analyzed Image" class="image-preview">
+                {% endif %}
+
+                <div class="result-badge {% if prediction == 'Real' %}real{% else %}fake{% endif %}">
+                    {% if prediction == 'Real' %}
+                    <i class="fa-solid fa-circle-check"></i>
+                    {% else %}
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    {% endif %}
+                    {{ prediction }}
+                </div>
+
+                <div class="confidence-container {% if prediction == 'Real' %}real{% else %}fake{% endif %}">
+                    <div class="confidence-text">
+                        <span>Confidence Score</span>
+                        <span class="score-value">{{ confidence }}%</span>
+                    </div>
+                    <div class="confidence-bar">
+                        <div class="confidence-level" id="confidenceLevel" data-width="{{ confidence }}"></div>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #64748b; text-align: center;">
+                        The model is {{ confidence }}% confident that this image is {{ prediction }}.
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileNameDiv = document.getElementById('fileName');
+        const uploadArea = document.getElementById('uploadArea');
+        const form = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const spinner = document.getElementById('spinner');
+        const btnText = document.getElementById('btnText');
+        const btnIcon = document.getElementById('btnIcon');
+
+        // File selection display
+        fileInput.addEventListener('change', function () {
+            if (this.files && this.files.length > 0) {
+                fileNameDiv.innerHTML = '<i class="fa-solid fa-file-image"></i> ' + this.files[0].name;
+                fileNameDiv.style.display = "inline-block";
+                uploadArea.style.borderColor = "var(--primary)";
+                uploadArea.style.background = "rgba(79, 70, 229, 0.1)";
+            } else {
+                fileNameDiv.style.display = "none";
+                uploadArea.style.borderColor = "";
+                uploadArea.style.background = "";
+            }
+        });
+
+        // Drag and drop effects
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+
+                // Manually trigger change event to update text
+                const event = new Event('change');
+                fileInput.dispatchEvent(event);
+            }
+        });
+
+        // Form submission loading state
+        form.addEventListener('submit', () => {
+            submitBtn.disabled = true;
+            btnText.textContent = 'Processing...';
+            btnIcon.style.display = 'none';
+            spinner.style.display = 'block';
+        });
+
+        // Trigger confidence bar animation on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const confLevel = document.getElementById('confidenceLevel');
+            if (confLevel) {
+                // Slight delay for smooth visual effect after DOM load
+                setTimeout(() => {
+                    confLevel.style.width = confLevel.getAttribute('data-width') + '%';
+                }, 400);
+            }
+        });
+    </script>
+</body>
+
+</html>
