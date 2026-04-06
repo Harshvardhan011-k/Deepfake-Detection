@@ -62,5 +62,5 @@ Navigate to `http://127.0.0.1:5000/` in your web browser to access the Deepfake 
 ## How it Works
 1. The user uploads an image via the web interface.
 2. `app.py` receives the image, resizes it to `224x224`, normalizes the pixel values, and prepares it for prediction.
-3. The custom CNN architecture evaluates the image and returns a probability score.
+3. The best model evaluates the image and returns a probability score.
 4. The prediction (`Fake` or `Real`) and the confidence score are displayed back to the user.
