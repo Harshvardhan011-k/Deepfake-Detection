@@ -1,20 +1,26 @@
 import os
 
-# ✅ Fix TensorFlow threading issues (macOS)
+# ✅ Fix TensorFlow threading issues (important for deployment)
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["TF_NUM_INTRAOP_THREADS"] = "1"
 os.environ["TF_NUM_INTEROP_THREADS"] = "1"
 
-from flask import Flask, render_template, request
+import streamlit as st
 import tensorflow as tf
 import numpy as np
 from PIL import Image
 
-app = Flask(__name__)
+# ==============================
+# PAGE CONFIG
+# ==============================
+st.set_page_config(page_title="Deepfake Detector AI", layout="centered")
+
+st.title("🧠 Deepfake Detector AI")
+st.write("Upload an image to verify its authenticity using deep learning.")
 
 # ==============================
-# ✅ EXACT MODEL ARCHITECTURE
+# MODEL ARCHITECTURE
 # ==============================
 def build_model():
     input_shape = (224, 224, 3)
@@ -57,77 +63,57 @@ def build_model():
     model.add(tf.keras.layers.Dropout(droprate))
 
     model.add(tf.keras.layers.GlobalAveragePooling2D())
-
     model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
 
     return model
 
 # ==============================
-# ✅ LOAD WEIGHTS
+# LOAD MODEL (CACHED)
 # ==============================
-model = build_model()
-model.load_weights('models/custom_augmented_model.weights.h5')
+@st.cache_resource
+def load_model():
+    model = build_model()
+    model.load_weights('models/custom_augmented_model.weights.h5')
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    return model
 
-# Compile (safe)
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-
-# ==============================
-# CONFIG
-# ==============================
-UPLOAD_FOLDER = 'static/uploads/'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+model = load_model()
 
 # ==============================
 # PREPROCESSING
 # ==============================
-def preprocess_image(image_path):
-    img = Image.open(image_path).convert('RGB')
+def preprocess_image(image):
+    img = image.convert('RGB')
     img = img.resize((224, 224))
     img = np.array(img) / 255.0
     img = np.expand_dims(img, axis=0)
     return img
 
 # ==============================
-# ROUTE
+# FILE UPLOAD
 # ==============================
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    prediction = None
-    image_path = None
-    confidence = None
+uploaded_file = st.file_uploader("📤 Upload an Image", type=["jpg", "jpeg", "png"])
 
-    if request.method == 'POST':
-        file = request.files.get('file')
+if uploaded_file:
+    image = Image.open(uploaded_file)
 
-        if file and file.filename != "":
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-            file.save(filepath)
+    st.image(image, caption="Uploaded Image", use_container_width=True)
 
-            image = preprocess_image(filepath)
-            pred = model.predict(image)[0][0]
+    if st.button("🔍 Analyze Image"):
+        with st.spinner("Processing..."):
+            img = preprocess_image(image)
+            pred = model.predict(img)[0][0]
 
-            print("Prediction value:", pred, flush=True)
-
-            # Prediction + confidence
+            # Prediction logic
             if pred > 0.5:
                 prediction = "Real"
-                confidence = round(pred * 100, 2)
+                confidence = pred * 100
+                st.success(f"✅ {prediction}")
             else:
                 prediction = "Fake"
-                confidence = round((1 - pred) * 100, 2)
+                confidence = (1 - pred) * 100
+                st.error(f"⚠️ {prediction}")
 
-            image_path = filepath
-
-    return render_template(
-        'index.html',
-        prediction=prediction,
-        image_path=image_path,
-        confidence=confidence
-    )
-
-# ==============================
-# RUN
-# ==============================
-if __name__ == '__main__':
-    app.run(debug=False, use_reloader=False)
+            # Confidence display
+            st.write(f"**Confidence: {confidence:.2f}%**")
+            st.progress(int(confidence))
